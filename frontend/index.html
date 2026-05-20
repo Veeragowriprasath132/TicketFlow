@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TicketFlow — Mock Ticketing System</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <div class="logo-icon"><i class="ti ti-ticket"></i></div>
+        <div>
+          <div class="logo-text">TicketFlow</div>
+          <div class="logo-sub">Mock Ticketing System</div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-section">Main</div>
+    <button class="nav-item active" onclick="nav('dashboard',this)"><i class="ti ti-home-2 icon"></i><span>Dashboard</span></button>
+    <button class="nav-item" onclick="nav('tickets',this)"><i class="ti ti-ticket icon"></i><span>All Tickets</span></button>
+    <button class="nav-item" onclick="nav('create',this)"><i class="ti ti-circle-plus icon"></i><span>New Ticket</span></button>
+    <div class="nav-section">Management</div>
+    <button class="nav-item" onclick="nav('teams',this)"><i class="ti ti-users-group icon"></i><span>Teams</span></button>
+    <button class="nav-item" onclick="nav('agents',this)"><i class="ti ti-user icon"></i><span>Agents</span></button>
+    <div class="nav-section">Integration</div>
+    <button class="nav-item" onclick="nav('sync',this)"><i class="ti ti-refresh icon"></i><span>Sync to ServicePulse</span></button>
+    <div class="sidebar-footer">
+      <button class="nav-item" id="themeBtn" onclick="toggleTheme()"><i class="ti ti-moon icon"></i><span>Dark Mode</span></button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-title-area">
+        <div class="topbar-title" id="pageTitle">Dashboard</div>
+        <div class="topbar-sub" id="pageSub">TicketFlow — Mock Ticketing System</div>
+      </div>
+      <div class="topbar-actions">
+        <input class="search-input" id="globalSearch" placeholder="🔍 Search tickets..." oninput="handleSearch(this.value)" />
+        <div class="sync-status" id="syncStatus">
+          <span class="sync-dot"></span> Connected to ServicePulse
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="metrics-grid" id="dashMetrics"></div>
+        <div class="charts-row">
+          <div class="card">
+            <div class="card-header"><div class="card-title">Recent Tickets</div><span class="card-action" onclick="nav('tickets',document.querySelector('[data-page=tickets]'))">View all →</span></div>
+            <div class="table-wrap"><table><thead><tr><th>ID</th><th>Subject</th><th>Team</th><th>Priority</th><th>Status</th><th>Created</th></tr></thead><tbody id="recentTicketsBody"></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">Team Workload</div></div>
+            <div id="teamWorkload"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALL TICKETS -->
+      <div class="page" id="page-tickets">
+        <div class="filter-bar">
+          <select class="filter-select" onchange="filterTickets('status',this.value)">
+            <option value="">All Statuses</option>
+            <option>Open</option><option>In Progress</option>
+            <option>Resolved</option><option>SLA Breach</option>
+          </select>
+          <select class="filter-select" id="teamFilter" onchange="filterTickets('team_id',this.value)">
+            <option value="">All Teams</option>
+          </select>
+          <select class="filter-select" onchange="filterTickets('priority',this.value)">
+            <option value="">All Priorities</option>
+            <option>Critical</option><option>High</option>
+            <option>Medium</option><option>Low</option>
+          </select>
+          <button class="btn-secondary" onclick="clearFilters()">✕ Clear</button>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn-export" onclick="exportCSV()"><i class="ti ti-table-export"></i> CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">All Tickets</div>
+            <div class="results-count" id="ticketCount"></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Subject</th><th>Team</th><th>Agent</th><th>Priority</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+              <tbody id="allTicketsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREATE TICKET -->
+      <div class="page" id="page-create">
+        <div class="card" style="max-width:680px">
+          <div class="card-header"><div class="card-title">Create New Ticket</div><div class="card-sub">Auto-assigns to the selected team</div></div>
+          <div class="create-grid">
+            <div class="form-group full"><label class="form-label">Subject *</label><input type="text" id="ct-subject" placeholder="Brief description of the issue" /></div>
+            <div class="form-group full"><label class="form-label">Description</label><textarea id="ct-desc" placeholder="Detailed description..."></textarea></div>
+            <div class="form-group"><label class="form-label">Category *</label>
+              <select id="ct-category">
+                <option value="">— Select —</option>
+                <option>Network</option><option>Security</option><option>Hardware</option>
+                <option>Software</option><option>Infrastructure</option>
+                <option>BI & Analytics</option><option>Database</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Priority</label>
+              <select id="ct-priority"><option>Medium</option><option>Low</option><option>High</option><option>Critical</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Team</label><select id="ct-team"><option value="">Auto-assign</option></select></div>
+            <div class="form-group"><label class="form-label">Agent</label><select id="ct-agent"><option value="">Unassigned</option></select></div>
+            <div class="form-group"><label class="form-label">Reporter Name</label><input type="text" id="ct-reporter" placeholder="Full name" /></div>
+            <div class="form-group"><label class="form-label">Reporter Email</label><input type="email" id="ct-email" placeholder="email@company.com" /></div>
+            <div class="form-group full form-actions">
+              <button class="btn-secondary" onclick="clearCreateForm()">Clear</button>
+              <button class="btn-primary" onclick="submitTicket()"><i class="ti ti-circle-plus"></i> Create Ticket</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEAMS -->
+      <div class="page" id="page-teams">
+        <div class="card">
+          <div class="card-header"><div class="card-title">All Teams</div></div>
+          <div class="team-grid" id="teamGrid"></div>
+        </div>
+      </div>
+
+      <!-- AGENTS -->
+      <div class="page" id="page-agents">
+        <div class="card">
+          <div class="card-header"><div class="card-title">All Agents</div></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Role</th><th>Team</th><th>Email</th><th>Open</th><th>Resolved</th></tr></thead>
+              <tbody id="agentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SYNC -->
+      <div class="page" id="page-sync">
+        <div class="card" style="max-width:700px">
+          <div class="card-header">
+            <div><div class="card-title">Sync to ServicePulse</div><div class="card-sub">Push TicketFlow data to ServicePulse dashboard</div></div>
+          </div>
+
+          <div class="sync-config">
+            <div class="form-group">
+              <label class="form-label">ServicePulse API URL</label>
+              <input type="text" id="servicePulseUrl" value="https://service-pulse-xzsh.onrender.com" placeholder="https://your-servicepulse-url.com" />
+            </div>
+            <div class="sync-actions">
+              <button class="btn-primary" onclick="testConnection()"><i class="ti ti-plug"></i> Test Connection</button>
+              <button class="btn-primary" style="background:#0F6E56" onclick="syncNow()"><i class="ti ti-refresh"></i> Sync Now</button>
+            </div>
+          </div>
+
+          <div id="syncResult" style="margin-top:16px"></div>
+
+          <div style="margin-top:24px">
+            <div class="card-title" style="margin-bottom:12px">API Endpoints (for ServicePulse)</div>
+            <div class="endpoint-list">
+              <div class="endpoint"><span class="method get">GET</span><code id="syncSummaryUrl">/api/summary</code><span class="ep-desc">Full summary for dashboard</span></div>
+              <div class="endpoint"><span class="method get">GET</span><code id="syncTicketsUrl">/api/tickets</code><span class="ep-desc">All tickets with filters</span></div>
+              <div class="endpoint"><span class="method get">GET</span><code id="syncUrl">/api/sync</code><span class="ep-desc">Incremental sync by timestamp</span></div>
+              <div class="endpoint"><span class="method post">POST</span><code>/api/tickets</code><span class="ep-desc">Create new ticket</span></div>
+              <div class="endpoint"><span class="method patch">PATCH</span><code>/api/tickets/{id}</code><span class="ep-desc">Update ticket</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TICKET DETAIL MODAL -->
+<div class="modal-overlay" id="ticketModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Ticket Detail</div>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div id="modalBody"></div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Close</button>
+      <button class="btn-primary" id="resolveBtn" onclick="resolveTicket()"><i class="ti ti-check"></i> Mark Resolved</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
